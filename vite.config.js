@@ -5,7 +5,10 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
-  base: process.env.NODE_ENV === "production" ? "/avg-weather/" : "/",
+  base:
+    process.env.NODE_ENV === "production"
+      ? "/is-it-supposed-to-be-this-hot/"
+      : "/",
   server: {
     port: 5173,
     open: true,
