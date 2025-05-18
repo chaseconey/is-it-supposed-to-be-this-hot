@@ -63,6 +63,20 @@ npm run build
 
 The build files will be in the `dist` directory.
 
+## GitHub Pages Deployment
+
+This project is configured for automatic deployment to GitHub Pages when you push to the main branch. The deployment process:
+
+1. Automatically builds the application
+2. Deploys it to GitHub Pages
+3. Makes it available at https://yourusername.github.io/avg-weather/
+
+To manually trigger a deployment:
+
+- Go to the Actions tab in your GitHub repository
+- Select the "Deploy to GitHub Pages" workflow
+- Click "Run workflow"
+
 ## Usage
 
 1. Enter a valid 5-digit US zip code in the input field
