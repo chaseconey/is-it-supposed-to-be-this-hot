@@ -38,7 +38,7 @@ onMounted(() => {
       <h1
         class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8"
       >
-        Temperature Pattern Visualization
+        Weather Patterns Visualization
       </h1>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">

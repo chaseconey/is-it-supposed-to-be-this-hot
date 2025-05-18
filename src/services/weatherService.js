@@ -39,7 +39,10 @@ async function fetchHistoricalData(startDate, endDate) {
       start_date: formatDate(startDate),
       end_date: formatDate(endDate),
       hourly: "temperature_2m",
+      daily: "rain_sum",
       temperature_unit: "fahrenheit",
+      precipitation_unit: "inch",
+      timezone: "America/Chicago",
     },
   });
 
@@ -61,7 +64,7 @@ export async function fetchWeatherData(zipCode) {
     // Calculate date ranges for the last 7 days
     const endDate = new Date(currentDate);
     const startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - 7); // Last 7 days
+    startDate.setDate(currentDate.getDate() - 30); // Last 7 days
 
     // For last year's data (same 7-day period, but from last year)
     const lastYearStart = new Date(startDate);
@@ -138,11 +141,29 @@ function processWeatherData(zipCode, currentData, lastYearData, fiveYearsData) {
     currentTemps.length
   );
 
+  // Process daily rainfall data
+  const dailyLabels = currentData.daily.time.map((timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  });
+
+  // Get rainfall data for each time period
+  const currentRainfall = currentData.daily.rain_sum;
+  const lastYearRainfall = lastYearData.daily.rain_sum;
+  const fiveYearsRainfall = fiveYearsData.daily.rain_sum;
+
   return {
     zipCode,
     timeLabels,
     currentTemps,
     lastYearTemps,
     fiveYearsTemps,
+    dailyLabels,
+    currentRainfall,
+    lastYearRainfall,
+    fiveYearsRainfall,
   };
 }
