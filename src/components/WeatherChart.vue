@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { use } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart, BarChart } from "echarts/charts";
@@ -12,6 +12,13 @@ import {
   ToolboxComponent,
 } from "echarts/components";
 import VChart from "vue-echarts";
+
+// Color constants for consistent color scheme
+const CHART_COLORS = {
+  CURRENT_YEAR: "#FF5733", // Warm orange-red for current year
+  LAST_YEAR: "#FFD700", // Medium yellow for last year
+  FIVE_YEARS_AGO: "#4286f4", // Cool blue for 5 years ago
+};
 
 // Register ECharts components
 use([
@@ -172,6 +179,84 @@ const rainfallChartOption = ref({
   series: [],
 });
 
+// Reactive refs for temperature averages and rainfall totals
+const tempAverages = ref({
+  current: 0,
+  lastYear: 0,
+  fiveYearsAgo: 0,
+});
+
+const rainfallTotals = ref({
+  current: 0,
+  lastYear: 0,
+  fiveYearsAgo: 0,
+});
+
+const tempAverageComputed = computed(() => {
+  if (!props.weatherData || !props.weatherData.currentTemps) {
+    return tempAverages.value;
+  }
+
+  const { currentTemps, lastYearTemps, fiveYearsTemps } = props.weatherData;
+
+  // Filter out any null or undefined values before calculating averages
+  const validCurrentTemps = currentTemps.filter(
+    (t) => t !== null && t !== undefined
+  );
+  const validLastYearTemps = lastYearTemps.filter(
+    (t) => t !== null && t !== undefined
+  );
+  const validFiveYearsTemps = fiveYearsTemps.filter(
+    (t) => t !== null && t !== undefined
+  );
+
+  tempAverages.value.current =
+    validCurrentTemps.length > 0
+      ? validCurrentTemps.reduce((a, b) => a + b, 0) / validCurrentTemps.length
+      : 0;
+  tempAverages.value.lastYear =
+    validLastYearTemps.length > 0
+      ? validLastYearTemps.reduce((a, b) => a + b, 0) /
+        validLastYearTemps.length
+      : 0;
+  tempAverages.value.fiveYearsAgo =
+    validFiveYearsTemps.length > 0
+      ? validFiveYearsTemps.reduce((a, b) => a + b, 0) /
+        validFiveYearsTemps.length
+      : 0;
+
+  return tempAverages.value;
+});
+
+const rainfallTotalComputed = computed(() => {
+  if (!props.weatherData || !props.weatherData.currentRainfall) {
+    return rainfallTotals.value;
+  }
+
+  const { currentRainfall, lastYearRainfall, fiveYearsRainfall } =
+    props.weatherData;
+
+  // Filter out any null or undefined values before calculating totals
+  const validCurrentRainfall = currentRainfall.filter(
+    (r) => r !== null && r !== undefined
+  );
+  const validLastYearRainfall = lastYearRainfall.filter(
+    (r) => r !== null && r !== undefined
+  );
+  const validFiveYearsRainfall = fiveYearsRainfall.filter(
+    (r) => r !== null && r !== undefined
+  );
+
+  rainfallTotals.value.current =
+    validCurrentRainfall.reduce((a, b) => a + b, 0) || 0;
+  rainfallTotals.value.lastYear =
+    validLastYearRainfall.reduce((a, b) => a + b, 0) || 0;
+  rainfallTotals.value.fiveYearsAgo =
+    validFiveYearsRainfall.reduce((a, b) => a + b, 0) || 0;
+
+  return rainfallTotals.value;
+});
+
 function updateTempChartData() {
   if (!props.weatherData) {
     return;
@@ -206,21 +291,21 @@ function updateTempChartData() {
       type: "line",
       data: currentTemps,
       lineStyle: { width: 3 },
-      itemStyle: { color: "#FF6B6B" },
+      itemStyle: { color: CHART_COLORS.CURRENT_YEAR },
     },
     {
       name: "Last Year Temperatures",
       type: "line",
       data: lastYearTemps,
       lineStyle: { width: 2, type: "dashed" },
-      itemStyle: { color: "#1A535C" },
+      itemStyle: { color: CHART_COLORS.LAST_YEAR },
     },
     {
       name: "5 Years Ago Temperatures",
       type: "line",
       data: fiveYearsTemps,
       lineStyle: { width: 2, type: "dotted" },
-      itemStyle: { color: "#4ECDC4" },
+      itemStyle: { color: CHART_COLORS.FIVE_YEARS_AGO },
     },
   ];
 }
@@ -254,19 +339,19 @@ function updateRainfallChartData() {
       name: "Current Rainfall",
       type: "bar",
       data: currentRainfall,
-      itemStyle: { color: "#4361EE" },
+      itemStyle: { color: CHART_COLORS.CURRENT_YEAR },
     },
     {
       name: "Last Year Rainfall",
       type: "bar",
       data: lastYearRainfall,
-      itemStyle: { color: "#3A0CA3" },
+      itemStyle: { color: CHART_COLORS.LAST_YEAR },
     },
     {
       name: "5 Years Ago Rainfall",
       type: "bar",
       data: fiveYearsRainfall,
-      itemStyle: { color: "#7209B7" },
+      itemStyle: { color: CHART_COLORS.FIVE_YEARS_AGO },
     },
   ];
 }
@@ -291,14 +376,42 @@ watch(
 
 <template>
   <div class="border border-gray-300 rounded-lg p-4 my-4 bg-white">
-    <p class="mb-4 font-medium">
-      Chart for zip code: {{ weatherData.zipCode }}
-    </p>
-
     <div class="mb-8">
       <h3 class="text-lg font-semibold mb-2">Temperature Comparison</h3>
       <div style="width: 100%; height: 400px; border: 1px solid #eee">
         <v-chart class="w-full h-full" :option="tempChartOption" autoresize />
+      </div>
+      <!-- Temperature averages metadata -->
+      <div class="mt-4 p-3 bg-gray-50 rounded-md">
+        <h4 class="font-semibold text-gray-700 mb-2">Average Temperatures</h4>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
+            ></span>
+            <span>Current: {{ tempAverageComputed.current.toFixed(1) }}°F</span>
+          </div>
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.LAST_YEAR}`"
+            ></span>
+            <span
+              >Last Year: {{ tempAverageComputed.lastYear.toFixed(1) }}°F</span
+            >
+          </div>
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.FIVE_YEARS_AGO}`"
+            ></span>
+            <span
+              >5 Years Ago:
+              {{ tempAverageComputed.fiveYearsAgo.toFixed(1) }}°F</span
+            >
+          </div>
+        </div>
       </div>
     </div>
 
@@ -310,6 +423,41 @@ watch(
           :option="rainfallChartOption"
           autoresize
         />
+      </div>
+      <!-- Rainfall totals metadata -->
+      <div class="mt-4 p-3 bg-gray-50 rounded-md">
+        <h4 class="font-semibold text-gray-700 mb-2">Total Rainfall</h4>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
+            ></span>
+            <span
+              >Current: {{ rainfallTotalComputed.current.toFixed(2) }} in</span
+            >
+          </div>
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.LAST_YEAR}`"
+            ></span>
+            <span
+              >Last Year:
+              {{ rainfallTotalComputed.lastYear.toFixed(2) }} in</span
+            >
+          </div>
+          <div class="flex items-center">
+            <span
+              class="w-3 h-3 rounded-full mr-2"
+              :style="`background-color: ${CHART_COLORS.FIVE_YEARS_AGO}`"
+            ></span>
+            <span
+              >5 Years Ago:
+              {{ rainfallTotalComputed.fiveYearsAgo.toFixed(2) }} in</span
+            >
+          </div>
+        </div>
       </div>
     </div>
   </div>

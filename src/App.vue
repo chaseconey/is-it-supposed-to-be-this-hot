@@ -10,15 +10,30 @@ const error = ref(null);
 
 const hasData = computed(() => weatherData.value !== null);
 
-// Hard-coded zip code for display purposes
-const hardcodedZipCode = "78717";
+// Add computed properties to format the date ranges
+const dateRanges = computed(() => {
+  if (!weatherData.value) return null;
+
+  // Get first and last dates from timeLabels (which uses the hourly timestamps)
+  const firstTimeLabel = weatherData.value.timeLabels[0];
+  const lastTimeLabel =
+    weatherData.value.timeLabels[weatherData.value.timeLabels.length - 1];
+
+  // Extract date portions from timeLabels
+  const startDate = firstTimeLabel.split(",")[0];
+  const endDate = lastTimeLabel.split(",")[0];
+
+  return {
+    current: `${startDate} - ${endDate}, ${new Date().getFullYear()}`,
+  };
+});
 
 async function loadWeatherData() {
   isLoading.value = true;
   error.value = null;
 
   try {
-    weatherData.value = await fetchWeatherData(hardcodedZipCode);
+    weatherData.value = await fetchWeatherData();
   } catch (err) {
     error.value = err.message || "Failed to fetch weather data";
     weatherData.value = null;
@@ -53,7 +68,19 @@ onMounted(() => {
           <p class="text-red-700 dark:text-red-400">{{ error }}</p>
         </div>
 
-        <WeatherChart v-else-if="hasData" :weatherData="weatherData" />
+        <div v-else-if="hasData">
+          <!-- Add date range information -->
+          <div
+            class="mb-6 text-center text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 rounded-md p-3"
+          >
+            <p>
+              <span class="font-medium">For Period:</span>
+              {{ dateRanges.current }}
+            </p>
+          </div>
+
+          <WeatherChart :weatherData="weatherData" />
+        </div>
 
         <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">
           <p>Loading weather data...</p>
