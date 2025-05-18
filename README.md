@@ -1,6 +1,8 @@
-# Weather Patterns Visualization
+# is-it-supposed-to-be-this-hot
 
-An interactive Vue.js application that visualizes temperature and rainfall patterns, comparing current weather data with historical data from last year and 5 years ago.
+The title of the project is a bit of a joke, but kinda not. Sometimes when we randomly get Feburary 90 degree days or monsoon weather, I ask myself how normal that is. This project is basically a customized view of historical weather data for my area (hard-coded) because I was tired of trying to find native data sources and visualizations. Most of them just didn't really give me exactly what I was looking for, so here we go.
+
+_Most of this was done by Claude 3.7, so you can judge the code, but ""It wasn't me" - Shaggy - Chase"_
 
 ## Features
 
