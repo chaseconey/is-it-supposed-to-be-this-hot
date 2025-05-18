@@ -17,7 +17,12 @@ const DEFAULT_LONGITUDE = -97.7;
 async function fetchHistoricalData(startDate, endDate) {
   // Format dates in YYYY-MM-DD format
   const formatDate = (date) => {
-    return date.toISOString().split("T")[0];
+    return new Intl.DateTimeFormat("en-CA", {
+      // 'en-CA' locale forces YYYY-MM-DD
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
   };
 
   // Check cache first
@@ -58,21 +63,18 @@ async function fetchHistoricalData(startDate, endDate) {
  */
 export async function fetchWeatherData(zipCode) {
   try {
-    // Get current date (May 16, 2025)
-    const currentDate = new Date();
+    // Calculate date ranges for the last 30 days
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
 
-    // Calculate date ranges for the last 7 days
-    const endDate = new Date(currentDate);
-    const startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - 30); // Last 7 days
-
-    // For last year's data (same 7-day period, but from last year)
+    // For last year's data (same 30-day period, but from last year)
     const lastYearStart = new Date(startDate);
     lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
     const lastYearEnd = new Date(endDate);
     lastYearEnd.setFullYear(lastYearEnd.getFullYear() - 1);
 
-    // For 5 years ago data (same 7-day period, but from 5 years ago)
+    // For 5 years ago data (same 30-day period, but from 5 years ago)
     const fiveYearsStart = new Date(startDate);
     fiveYearsStart.setFullYear(fiveYearsStart.getFullYear() - 5);
     const fiveYearsEnd = new Date(endDate);
