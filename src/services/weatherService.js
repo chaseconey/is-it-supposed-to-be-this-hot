@@ -5,8 +5,8 @@ import { getFromCache, saveToCache, createCacheKey } from "./storageService.js";
 const BASE_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast";
 
 // Hard-coded coordinates for 78633
-const DEFAULT_LATITUDE = 30.7;
-const DEFAULT_LONGITUDE = -97.7;
+const DEFAULT_LATITUDE = 30.69;
+const DEFAULT_LONGITUDE = -97.71;
 
 /**
  * Helper function to fetch weather data for a specific date range
