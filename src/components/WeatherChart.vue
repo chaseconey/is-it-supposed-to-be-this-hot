@@ -390,7 +390,7 @@ watch(
               class="w-3 h-3 rounded-full mr-2"
               :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
             ></span>
-            <span>Current: {{ tempAverageComputed.current.toFixed(1) }}°F</span>
+            <span>Current Year: {{ tempAverageComputed.current.toFixed(1) }}°F</span>
           </div>
           <div class="flex items-center">
             <span
@@ -434,7 +434,7 @@ watch(
               :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
             ></span>
             <span
-              >Current: {{ rainfallTotalComputed.current.toFixed(2) }} in</span
+              >Current Year: {{ rainfallTotalComputed.current.toFixed(2) }} in</span
             >
           </div>
           <div class="flex items-center">
