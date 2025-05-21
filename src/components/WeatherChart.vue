@@ -64,9 +64,9 @@ const tempChartOption = ref({
   },
   legend: {
     data: [
-      "Current Temperatures",
-      "Last Year Temperatures",
-      "5 Years Ago Temperatures",
+      "Current Year",
+      "Last Year",
+      "5 Years Ago",
     ],
     type: "scroll",
     orient: "horizontal",
@@ -135,7 +135,7 @@ const rainfallChartOption = ref({
     },
   },
   legend: {
-    data: ["Current Rainfall", "Last Year Rainfall", "5 Years Ago Rainfall"],
+    data: ["Current Year", "Last Year", "5 Years Ago"],
     type: "scroll",
     orient: "horizontal",
     bottom: 0,
@@ -287,21 +287,21 @@ function updateTempChartData() {
 
   tempChartOption.value.series = [
     {
-      name: "Current Temperatures",
+      name: "Current Year",
       type: "line",
       data: currentTemps,
       lineStyle: { width: 3 },
       itemStyle: { color: CHART_COLORS.CURRENT_YEAR },
     },
     {
-      name: "Last Year Temperatures",
+      name: "Last Year",
       type: "line",
       data: lastYearTemps,
       lineStyle: { width: 2, type: "dashed" },
       itemStyle: { color: CHART_COLORS.LAST_YEAR },
     },
     {
-      name: "5 Years Ago Temperatures",
+      name: "5 Years Ago",
       type: "line",
       data: fiveYearsTemps,
       lineStyle: { width: 2, type: "dotted" },
@@ -336,19 +336,19 @@ function updateRainfallChartData() {
 
   rainfallChartOption.value.series = [
     {
-      name: "Current Rainfall",
+      name: "Current Year",
       type: "bar",
       data: currentRainfall,
       itemStyle: { color: CHART_COLORS.CURRENT_YEAR },
     },
     {
-      name: "Last Year Rainfall",
+      name: "Last Year",
       type: "bar",
       data: lastYearRainfall,
       itemStyle: { color: CHART_COLORS.LAST_YEAR },
     },
     {
-      name: "5 Years Ago Rainfall",
+      name: "5 Years Ago",
       type: "bar",
       data: fiveYearsRainfall,
       itemStyle: { color: CHART_COLORS.FIVE_YEARS_AGO },
