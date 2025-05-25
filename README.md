@@ -1,4 +1,8 @@
-# is-it-supposed-to-be-this-hot
+<div align="center">
+  <img src="public/logo.svg" alt="Is It Supposed To Be This Hot? Logo" width="200">
+  
+  # is-it-supposed-to-be-this-hot
+</div>
 
 The title of the project is a bit of a joke, but kinda not. Sometimes when we randomly get Feburary 90 degree days or monsoon weather in Austin, TX, and I ask myself how normal that is. This project is basically a customized view of historical weather data for my area (hard-coded) because I was tired of trying to find native data sources and visualizations. Most of them just didn't really give me exactly what I was looking for, so here we go.
 

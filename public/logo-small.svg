@@ -1,0 +1,26 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tempGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DC2626;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Thermometer bulb -->
+  <circle cx="20" cy="32" r="8" fill="url(#tempGradient)" opacity="0.9"/>
+  
+  <!-- Thermometer body -->
+  <rect x="17" y="12" width="6" height="20" fill="url(#tempGradient)" rx="3"/>
+  
+  <!-- Temperature indicator lines -->
+  <line x1="26" y1="16" x2="30" y2="16" stroke="#6B7280" stroke-width="1.5"/>
+  <line x1="26" y1="22" x2="32" y2="22" stroke="#EF4444" stroke-width="1.5"/>
+  <line x1="26" y1="28" x2="30" y2="28" stroke="#DC2626" stroke-width="2"/>
+  
+  <!-- Chart elements -->
+  <polyline points="8,38 14,32 20,35 26,28 32,30 38,22" fill="none" stroke="url(#tempGradient)" stroke-width="2"/>
+  <circle cx="38" cy="22" r="1.5" fill="#DC2626"/>
+  <circle cx="32" cy="30" r="1.5" fill="#EF4444"/>
+  <circle cx="26" cy="28" r="1.5" fill="#DC2626"/>
+</svg>

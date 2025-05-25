@@ -50,11 +50,20 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4">
     <div class="max-w-6xl mx-auto">
-      <h1
-        class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-8"
-      >
-        Weather Patterns Visualization
-      </h1>
+      <!-- Header with logo -->
+      <div class="text-center mb-8">
+        <img 
+          src="/logo-small.svg" 
+          alt="App Logo" 
+          class="w-12 h-12 mx-auto mb-4 opacity-80 hover:opacity-100 transition-opacity"
+        >
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+          Weather Patterns Visualization
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 mt-2 text-sm">
+          Is it supposed to be this hot? Let's find out with historical data.
+        </p>
+      </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
         <div v-if="isLoading" class="flex justify-center my-12">
@@ -87,8 +96,29 @@ onMounted(() => {
         </div>
       </div>
 
-      <footer class="text-center text-sm text-gray-500 dark:text-gray-400 mt-8">
-        <p>Weather data powered by OpenWeatherMap API</p>
+      <footer class="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 space-y-2">
+        <p>
+          Weather data provided by 
+          <a 
+            href="https://open-meteo.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Open-Meteo
+          </a>
+        </p>
+        <p class="text-xs">
+          Historical weather data for Austin, TX (78633) • 
+          <a 
+            href="https://github.com/chaseconey/is-it-supposed-to-be-this-hot" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:underline"
+          >
+            View on GitHub
+          </a>
+        </p>
       </footer>
     </div>
   </div>
