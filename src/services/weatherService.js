@@ -65,7 +65,8 @@ export async function fetchWeatherData(zipCode) {
   try {
     // Calculate date ranges for the last 30 days
     const endDate = new Date();
-    const startDate = new Date();
+    endDate.setDate(endDate.getDate() - 1); // End yesterday instead of today
+    const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - 30);
 
     // For last year's data (same 30-day period, but from last year)
