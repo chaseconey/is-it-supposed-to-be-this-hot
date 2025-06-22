@@ -52,9 +52,13 @@ export function saveToCache(key, data) {
  * Creates a cache key for the historical data request
  * @param {Date} startDate - The start date
  * @param {Date} endDate - The end date
+ * @param {string} cityName - The city name for location-specific caching
  * @returns {string} - The cache key
  */
-export function createCacheKey(startDate, endDate) {
+export function createCacheKey(startDate, endDate, cityName) {
   const formatDate = (date) => date.toISOString().split("T")[0];
-  return `weather_data_${formatDate(startDate)}_${formatDate(endDate)}`;
+  const normalizedCity = cityName.toLowerCase().replace(/\s+/g, "_");
+  return `weather_data_${normalizedCity}_${formatDate(startDate)}_${formatDate(
+    endDate
+  )}`;
 }

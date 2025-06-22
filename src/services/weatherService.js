@@ -1,20 +1,31 @@
 import axios from "axios";
 import { getFromCache, saveToCache, createCacheKey } from "./storageService.js";
+import { geocodeCity } from "./geocodingService.js";
 
 // Open-Meteo API base URL
 const BASE_URL = "https://historical-forecast-api.open-meteo.com/v1/forecast";
 
-// Hard-coded coordinates for 78633
+// Default coordinates for fallback (Austin, TX - 78633)
 const DEFAULT_LATITUDE = 30.69;
 const DEFAULT_LONGITUDE = -97.71;
+const DEFAULT_CITY = "Austin, TX";
 
 /**
  * Helper function to fetch weather data for a specific date range
  * @param {Date} startDate - The start date for the data
  * @param {Date} endDate - The end date for the data
+ * @param {number} latitude - The latitude coordinate
+ * @param {number} longitude - The longitude coordinate
+ * @param {string} cityName - The city name for caching purposes
  * @returns {Promise<Object>} - The API response data
  */
-async function fetchHistoricalData(startDate, endDate) {
+async function fetchHistoricalData(
+  startDate,
+  endDate,
+  latitude,
+  longitude,
+  cityName
+) {
   // Format dates in YYYY-MM-DD format
   const formatDate = (date) => {
     return new Intl.DateTimeFormat("en-CA", {
@@ -26,12 +37,14 @@ async function fetchHistoricalData(startDate, endDate) {
   };
 
   // Check cache first
-  const cacheKey = createCacheKey(startDate, endDate);
+  const cacheKey = createCacheKey(startDate, endDate, cityName);
   const cachedData = getFromCache(cacheKey);
 
   if (cachedData) {
     console.log(
-      `Using cached data for ${formatDate(startDate)} to ${formatDate(endDate)}`
+      `Using cached data for ${cityName}: ${formatDate(
+        startDate
+      )} to ${formatDate(endDate)}`
     );
     return cachedData;
   }
@@ -39,8 +52,8 @@ async function fetchHistoricalData(startDate, endDate) {
   // If not in cache, fetch from API
   const response = await axios.get(BASE_URL, {
     params: {
-      latitude: DEFAULT_LATITUDE,
-      longitude: DEFAULT_LONGITUDE,
+      latitude: latitude,
+      longitude: longitude,
       start_date: formatDate(startDate),
       end_date: formatDate(endDate),
       hourly: "temperature_2m",
@@ -57,12 +70,45 @@ async function fetchHistoricalData(startDate, endDate) {
 }
 
 /**
- * Fetches weather data using hard-coded coordinates
- * @param {string} zipCode - The zip code for display purposes only
+ * Fetches weather data for a specific city
+ * @param {string|Object} cityNameOrCoords - The city name to get weather data for, or coordinates object {lat, lng, displayName}
  * @returns {Promise<Object>} - The processed weather data
  */
-export async function fetchWeatherData(zipCode) {
+export async function fetchWeatherData(cityNameOrCoords) {
   try {
+    // Get coordinates for the city
+    let coordinates;
+    let displayName;
+
+    // Check if we received coordinates directly
+    if (
+      cityNameOrCoords &&
+      typeof cityNameOrCoords === "object" &&
+      cityNameOrCoords.lat &&
+      cityNameOrCoords.lng
+    ) {
+      coordinates = { lat: cityNameOrCoords.lat, lng: cityNameOrCoords.lng };
+      displayName =
+        cityNameOrCoords.displayName ||
+        cityNameOrCoords.formattedName ||
+        "Unknown Location";
+      console.log(`Using provided coordinates for ${displayName}`);
+    } else if (
+      !cityNameOrCoords ||
+      (typeof cityNameOrCoords === "string" && cityNameOrCoords.trim() === "")
+    ) {
+      // Use default coordinates if no city provided
+      coordinates = { lat: DEFAULT_LATITUDE, lng: DEFAULT_LONGITUDE };
+      displayName = DEFAULT_CITY;
+      console.log(`No city provided, using default: ${DEFAULT_CITY}`);
+    } else {
+      console.log("Falling back to geocoding for city name:", cityNameOrCoords);
+      // Geocode the city name
+      const geocodeResult = await geocodeCity(cityNameOrCoords);
+      coordinates = { lat: geocodeResult.lat, lng: geocodeResult.lng };
+      displayName = geocodeResult.formattedName;
+    }
+
     // Calculate date ranges for the last 30 days
     const endDate = new Date();
     endDate.setDate(endDate.getDate() - 1); // End yesterday instead of today
@@ -83,19 +129,43 @@ export async function fetchWeatherData(zipCode) {
 
     // Fetch data for all three time periods using the helper function
     const [currentData, lastYearData, fiveYearsData] = await Promise.all([
-      fetchHistoricalData(startDate, endDate),
-      fetchHistoricalData(lastYearStart, lastYearEnd),
-      fetchHistoricalData(fiveYearsStart, fiveYearsEnd),
+      fetchHistoricalData(
+        startDate,
+        endDate,
+        coordinates.lat,
+        coordinates.lng,
+        displayName
+      ),
+      fetchHistoricalData(
+        lastYearStart,
+        lastYearEnd,
+        coordinates.lat,
+        coordinates.lng,
+        displayName
+      ),
+      fetchHistoricalData(
+        fiveYearsStart,
+        fiveYearsEnd,
+        coordinates.lat,
+        coordinates.lng,
+        displayName
+      ),
     ]);
 
     // Process the data from all API calls
     return processWeatherData(
-      zipCode,
+      displayName,
       currentData,
       lastYearData,
       fiveYearsData
     );
   } catch (error) {
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("enter a valid city")
+    ) {
+      throw error; // Re-throw geocoding errors as-is
+    }
     throw new Error("Failed to fetch weather data. Please try again later.");
   }
 }
