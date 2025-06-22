@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import WeatherChart from "./components/WeatherChart.vue";
 import LoadingSpinner from "./components/LoadingSpinner.vue";
 import { fetchWeatherData } from "./services/weatherService";
@@ -14,6 +14,9 @@ const suggestions = ref([]);
 const showSuggestions = ref(false);
 const searchTimeout = ref(null);
 const shouldSearch = ref(true); // Flag to control when to search
+
+// Responsive breakpoint detection
+const isMobile = ref(false);
 
 const hasData = computed(() => weatherData.value !== null);
 
@@ -117,6 +120,21 @@ function handleInput() {
   shouldSearch.value = true; // Ensure search is enabled when user types
 }
 
+// Responsive breakpoint detection functions
+function checkScreenSize() {
+  isMobile.value = window.innerWidth < 768; // Tailwind's md breakpoint
+}
+
+// Lifecycle hooks for responsive detection
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", checkScreenSize);
+});
+
 // Watch for changes in cityName to trigger search
 watch(cityName, () => {
   searchForCities();
@@ -133,20 +151,27 @@ watch(cityName, () => {
           alt="App Logo"
           class="w-12 h-12 mx-auto mb-4 opacity-80 hover:opacity-100 transition-opacity"
         />
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+        <h1
+          :class="isMobile ? 'text-2xl' : 'text-3xl'"
+          class="font-bold text-gray-800 dark:text-white"
+        >
           Weather Patterns Visualization
         </h1>
-        <p class="text-gray-600 dark:text-gray-300 mt-2 text-sm">
+        <p
+          :class="isMobile ? 'text-xs' : 'text-sm'"
+          class="text-gray-600 dark:text-gray-300 mt-2"
+        >
           Is it supposed to be this hot? Let's find out with historical data.
         </p>
       </div>
 
       <!-- City Search Input -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <div class="max-w-md mx-auto relative">
+        <div :class="isMobile ? 'w-full' : 'max-w-md mx-auto'" class="relative">
           <label
             for="city-input"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            :class="isMobile ? 'text-xs' : 'text-sm'"
+            class="block font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
             Search for a city to view weather data:
           </label>
@@ -159,7 +184,8 @@ watch(cityName, () => {
               @blur="handleInputBlur"
               type="text"
               placeholder="e.g., New York, Houston, London"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              :class="isMobile ? 'text-base py-3' : 'py-2'"
+              class="w-full px-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               :disabled="isLoading"
               autocomplete="off"
             />
@@ -173,12 +199,19 @@ watch(cityName, () => {
                 v-for="suggestion in suggestions"
                 :key="suggestion.id"
                 @click="selectCity(suggestion)"
-                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
+                :class="isMobile ? 'px-4 py-3' : 'px-3 py-2'"
+                class="hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
               >
-                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                <div
+                  :class="isMobile ? 'text-base' : 'text-sm'"
+                  class="font-medium text-gray-900 dark:text-white"
+                >
                   {{ suggestion.name }}
                 </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
+                <div
+                  :class="isMobile ? 'text-sm' : 'text-xs'"
+                  class="text-gray-500 dark:text-gray-400"
+                >
                   {{ suggestion.admin1 ? suggestion.admin1 + ", " : ""
                   }}{{ suggestion.country }}
                 </div>
@@ -215,7 +248,7 @@ watch(cityName, () => {
             </p>
           </div>
 
-          <WeatherChart :weatherData="weatherData" />
+          <WeatherChart :weatherData="weatherData" :isMobile="isMobile" />
         </div>
 
         <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">

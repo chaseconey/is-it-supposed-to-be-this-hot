@@ -20,6 +20,89 @@ const CHART_COLORS = {
   FIVE_YEARS_AGO: "#4286f4", // Cool blue for 5 years ago
 };
 
+// Data aggregation functions for mobile optimization
+function aggregateDataToSixHours(timeLabels, ...dataSeries) {
+  if (!timeLabels || timeLabels.length === 0) {
+    return { timeLabels: [], dataSeries: dataSeries.map(() => []) };
+  }
+
+  const aggregatedLabels = [];
+  const aggregatedSeries = dataSeries.map(() => []);
+
+  // Group data points into 6-hour intervals (4 points per day)
+  for (let i = 0; i < timeLabels.length; i += 6) {
+    const groupEndIndex = Math.min(i + 6, timeLabels.length);
+
+    // Create label for this 6-hour period
+    const startTime = new Date(
+      timeLabels[i].replace(/,.*/, "") + ", " + new Date().getFullYear()
+    );
+    const hour = new Date(timeLabels[i].split(", ")[1]).getHours();
+
+    let timeLabel;
+    if (hour < 6) timeLabel = "Early Morning";
+    else if (hour < 12) timeLabel = "Morning";
+    else if (hour < 18) timeLabel = "Afternoon";
+    else timeLabel = "Evening";
+
+    const dateLabel = startTime.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+    aggregatedLabels.push(`${dateLabel}, ${timeLabel}`);
+
+    // Aggregate each data series
+    dataSeries.forEach((series, seriesIndex) => {
+      const slice = series.slice(i, groupEndIndex);
+      const validValues = slice.filter(
+        (val) => val !== null && val !== undefined
+      );
+
+      if (validValues.length > 0) {
+        // For temperature: use average
+        // For rainfall: use sum (will be handled separately)
+        const aggregatedValue =
+          validValues.reduce((sum, val) => sum + val, 0) / validValues.length;
+        aggregatedSeries[seriesIndex].push(
+          Math.round(aggregatedValue * 100) / 100
+        );
+      } else {
+        aggregatedSeries[seriesIndex].push(null);
+      }
+    });
+  }
+
+  return {
+    timeLabels: aggregatedLabels,
+    dataSeries: aggregatedSeries,
+  };
+}
+
+function aggregateRainfallToSixHours(dailyLabels, ...dataSeries) {
+  // For daily rainfall data, we don't need 6-hour aggregation since it's already daily
+  // But we can reduce frequency for mobile by showing every other day or every few days
+  if (!props.isMobile) {
+    return { dailyLabels, dataSeries };
+  }
+
+  const aggregatedLabels = [];
+  const aggregatedSeries = dataSeries.map(() => []);
+
+  // Show every 2nd day on mobile to reduce clutter
+  for (let i = 0; i < dailyLabels.length; i += 2) {
+    aggregatedLabels.push(dailyLabels[i]);
+    dataSeries.forEach((series, seriesIndex) => {
+      aggregatedSeries[seriesIndex].push(series[i]);
+    });
+  }
+
+  return {
+    dailyLabels: aggregatedLabels,
+    dataSeries: aggregatedSeries,
+  };
+}
+
 // Register ECharts components
 use([
   CanvasRenderer,
@@ -38,13 +121,13 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  isMobile: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const tempChartOption = ref({
-  title: {
-    text: "Temperature Patterns Comparison",
-    left: "center",
-  },
   tooltip: {
     trigger: "axis",
     formatter: function (params) {
@@ -63,11 +146,7 @@ const tempChartOption = ref({
     },
   },
   legend: {
-    data: [
-      "Current Year",
-      "Last Year",
-      "5 Years Ago",
-    ],
+    data: ["Current Year", "Last Year", "5 Years Ago"],
     type: "scroll",
     orient: "horizontal",
     bottom: 0,
@@ -113,10 +192,6 @@ const tempChartOption = ref({
 });
 
 const rainfallChartOption = ref({
-  title: {
-    text: "Daily Rainfall Comparison",
-    left: "center",
-  },
   tooltip: {
     trigger: "axis",
     formatter: function (params) {
@@ -262,8 +337,20 @@ function updateTempChartData() {
     return;
   }
 
-  const { timeLabels, currentTemps, lastYearTemps, fiveYearsTemps } =
+  let { timeLabels, currentTemps, lastYearTemps, fiveYearsTemps } =
     props.weatherData;
+
+  // Aggregate data for mobile display
+  if (props.isMobile) {
+    const aggregated = aggregateDataToSixHours(
+      timeLabels,
+      currentTemps,
+      lastYearTemps,
+      fiveYearsTemps
+    );
+    timeLabels = aggregated.timeLabels;
+    [currentTemps, lastYearTemps, fiveYearsTemps] = aggregated.dataSeries;
+  }
 
   tempChartOption.value.xAxis.data = timeLabels;
 
@@ -315,8 +402,21 @@ function updateRainfallChartData() {
     return;
   }
 
-  const { dailyLabels, currentRainfall, lastYearRainfall, fiveYearsRainfall } =
+  let { dailyLabels, currentRainfall, lastYearRainfall, fiveYearsRainfall } =
     props.weatherData;
+
+  // Aggregate data for mobile display
+  if (props.isMobile) {
+    const aggregated = aggregateRainfallToSixHours(
+      dailyLabels,
+      currentRainfall,
+      lastYearRainfall,
+      fiveYearsRainfall
+    );
+    dailyLabels = aggregated.dailyLabels;
+    [currentRainfall, lastYearRainfall, fiveYearsRainfall] =
+      aggregated.dataSeries;
+  }
 
   rainfallChartOption.value.xAxis.data = dailyLabels;
 
@@ -361,7 +461,44 @@ function updateChartData() {
   updateRainfallChartData();
 }
 
+// Watch for mobile prop changes to update chart responsiveness
+watch(
+  () => props.isMobile,
+  () => {
+    updateChartOptions();
+    updateChartData();
+  }
+);
+
+// Update chart options based on screen size
+function updateChartOptions() {
+  const isMobileView = props.isMobile;
+
+  // Update temperature chart options
+  tempChartOption.value.grid = {
+    left: isMobileView ? "5%" : "3%",
+    right: isMobileView ? "5%" : "4%",
+    bottom: isMobileView ? "20%" : "15%",
+    top: isMobileView ? "20%" : "15%",
+    containLabel: true,
+  };
+
+  tempChartOption.value.dataZoom[0].start = isMobileView ? 70 : 0; // Show recent data first on mobile
+
+  // Update rainfall chart options
+  rainfallChartOption.value.grid = {
+    left: isMobileView ? "5%" : "3%",
+    right: isMobileView ? "5%" : "4%",
+    bottom: isMobileView ? "20%" : "15%",
+    top: isMobileView ? "20%" : "15%",
+    containLabel: true,
+  };
+
+  rainfallChartOption.value.dataZoom[0].start = isMobileView ? 70 : 0;
+}
+
 onMounted(() => {
+  updateChartOptions();
   updateChartData();
 });
 
@@ -378,19 +515,26 @@ watch(
   <div class="border border-gray-300 rounded-lg p-4 my-4 bg-white">
     <div class="mb-8">
       <h3 class="text-lg font-semibold mb-2">Temperature Comparison</h3>
-      <div style="width: 100%; height: 400px; border: 1px solid #eee">
+      <div
+        :style="`width: 100%; height: ${
+          isMobile ? '300px' : '400px'
+        }; border: 1px solid #eee`"
+      >
         <v-chart class="w-full h-full" :option="tempChartOption" autoresize />
       </div>
-      <!-- Temperature averages metadata -->
+      <!-- Temperature averages metadata with responsive layout -->
       <div class="mt-4 p-3 bg-gray-50 rounded-md">
         <h4 class="font-semibold text-gray-700 mb-2">Average Temperatures</h4>
-        <div class="grid grid-cols-3 gap-4">
+        <div :class="isMobile ? 'space-y-2' : 'grid grid-cols-3 gap-4'">
           <div class="flex items-center">
             <span
               class="w-3 h-3 rounded-full mr-2"
               :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
             ></span>
-            <span>Current Year: {{ tempAverageComputed.current.toFixed(1) }}°F</span>
+            <span
+              >Current Year:
+              {{ tempAverageComputed.current.toFixed(1) }}°F</span
+            >
           </div>
           <div class="flex items-center">
             <span
@@ -417,24 +561,29 @@ watch(
 
     <div>
       <h3 class="text-lg font-semibold mb-2">Rainfall Comparison</h3>
-      <div style="width: 100%; height: 400px; border: 1px solid #eee">
+      <div
+        :style="`width: 100%; height: ${
+          isMobile ? '300px' : '400px'
+        }; border: 1px solid #eee`"
+      >
         <v-chart
           class="w-full h-full"
           :option="rainfallChartOption"
           autoresize
         />
       </div>
-      <!-- Rainfall totals metadata -->
+      <!-- Rainfall totals metadata with responsive layout -->
       <div class="mt-4 p-3 bg-gray-50 rounded-md">
         <h4 class="font-semibold text-gray-700 mb-2">Total Rainfall</h4>
-        <div class="grid grid-cols-3 gap-4">
+        <div :class="isMobile ? 'space-y-2' : 'grid grid-cols-3 gap-4'">
           <div class="flex items-center">
             <span
               class="w-3 h-3 rounded-full mr-2"
               :style="`background-color: ${CHART_COLORS.CURRENT_YEAR}`"
             ></span>
             <span
-              >Current Year: {{ rainfallTotalComputed.current.toFixed(2) }} in</span
+              >Current Year:
+              {{ rainfallTotalComputed.current.toFixed(2) }} in</span
             >
           </div>
           <div class="flex items-center">
