@@ -4,6 +4,16 @@ import WeatherChart from "./components/WeatherChart.vue";
 import LoadingSpinner from "./components/LoadingSpinner.vue";
 import { fetchWeatherData } from "./services/weatherService";
 import { searchCities } from "./services/geocodingService";
+import { useUrlState } from "./composables/useUrlState";
+
+// Initialize URL state management
+const {
+  currentState,
+  updateUrl,
+  initializeUrlState,
+  cleanupUrlState,
+  getCoordinates,
+} = useUrlState();
 
 const weatherData = ref(null);
 const isLoading = ref(false);
@@ -71,6 +81,10 @@ function selectCity(suggestion) {
   shouldSearch.value = false; // Prevent search when setting city name programmatically
   cityName.value = suggestion.formattedName;
   hideSuggestions();
+
+  // Update URL state
+  updateUrl(suggestion);
+
   // Use coordinates directly instead of re-geocoding
   loadWeatherDataWithCoords({
     lat: suggestion.lat,
@@ -129,16 +143,58 @@ function checkScreenSize() {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
+
+  // Initialize URL state management
+  initializeUrlState();
+
+  // Load weather data if URL contains city parameters
+  const coords = getCoordinates();
+  if (coords) {
+    cityName.value = currentState.value.displayName || currentState.value.city;
+    currentCity.value =
+      currentState.value.displayName || currentState.value.city;
+    loadWeatherDataWithCoords(coords);
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", checkScreenSize);
+  cleanupUrlState();
 });
 
 // Watch for changes in cityName to trigger search
 watch(cityName, () => {
   searchForCities();
 });
+
+// Watch for URL state changes (browser back/forward navigation)
+watch(
+  currentState,
+  (newState, oldState) => {
+    if (!newState.city && oldState.city) {
+      // User navigated back to home state - clear everything
+      cityName.value = "";
+      currentCity.value = "";
+      weatherData.value = null;
+      error.value = null;
+    } else if (newState.city && newState.city !== oldState.city) {
+      // User navigated to a different city state
+      shouldSearch.value = false;
+      cityName.value = newState.displayName || newState.city;
+      currentCity.value = newState.displayName || newState.city;
+
+      const coords = getCoordinates();
+      if (coords) {
+        loadWeatherDataWithCoords(coords);
+      }
+
+      setTimeout(() => {
+        shouldSearch.value = true;
+      }, 100);
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <template>
