@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import WeatherChart from "./components/WeatherChart.vue";
 import LoadingSpinner from "./components/LoadingSpinner.vue";
 import { fetchWeatherData } from "./services/weatherService";
