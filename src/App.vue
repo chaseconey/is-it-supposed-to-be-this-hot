@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch } from "vue";
 import WeatherChart from "./components/WeatherChart.vue";
 import LoadingSpinner from "./components/LoadingSpinner.vue";
 import { fetchWeatherData } from "./services/weatherService";
@@ -9,7 +9,7 @@ const weatherData = ref(null);
 const isLoading = ref(false);
 const error = ref(null);
 const cityName = ref("");
-const currentCity = ref("Austin, TX"); // Display the current city being shown
+const currentCity = ref(""); // Display the current city being shown
 const suggestions = ref([]);
 const showSuggestions = ref(false);
 const searchTimeout = ref(null);
@@ -34,39 +34,6 @@ const dateRanges = computed(() => {
     current: `${startDate} - ${endDate}, ${new Date().getFullYear()}`,
   };
 });
-
-async function loadWeatherData(city = "") {
-  isLoading.value = true;
-  error.value = null;
-
-  try {
-    const result = await fetchWeatherData(city);
-    weatherData.value = result;
-    currentCity.value = result.zipCode; // The service now returns the formatted city name in zipCode field
-  } catch (err) {
-    error.value = err.message || "Failed to fetch weather data";
-    weatherData.value = null;
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-function handleCitySearch() {
-  if (cityName.value.trim()) {
-    loadWeatherData(cityName.value.trim());
-  }
-}
-
-function handleKeyPress(event) {
-  if (event.key === "Enter") {
-    handleCitySearch();
-  } else if (event.key === "Escape") {
-    hideSuggestions();
-  } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-    event.preventDefault();
-    // Handle arrow key navigation if needed
-  }
-}
 
 async function searchForCities() {
   if (searchTimeout.value) {
@@ -154,10 +121,6 @@ function handleInput() {
 watch(cityName, () => {
   searchForCities();
 });
-
-onMounted(() => {
-  loadWeatherData();
-});
 </script>
 
 <template>
@@ -185,54 +148,42 @@ onMounted(() => {
             for="city-input"
             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Enter a city name to view weather data:
+            Search for a city to view weather data:
           </label>
-          <div class="flex gap-2">
-            <div class="flex-1 relative">
-              <input
-                id="city-input"
-                v-model="cityName"
-                @input="handleInput"
-                @keypress="handleKeyPress"
-                @focus="handleInputFocus"
-                @blur="handleInputBlur"
-                type="text"
-                placeholder="e.g., New York, Houston, London"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                :disabled="isLoading"
-                autocomplete="off"
-              />
+          <div class="relative">
+            <input
+              id="city-input"
+              v-model="cityName"
+              @input="handleInput"
+              @focus="handleInputFocus"
+              @blur="handleInputBlur"
+              type="text"
+              placeholder="e.g., New York, Houston, London"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              :disabled="isLoading"
+              autocomplete="off"
+            />
 
-              <!-- Autocomplete Dropdown -->
+            <!-- Autocomplete Dropdown -->
+            <div
+              v-if="showSuggestions && suggestions.length > 0"
+              class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto"
+            >
               <div
-                v-if="showSuggestions && suggestions.length > 0"
-                class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto"
+                v-for="suggestion in suggestions"
+                :key="suggestion.id"
+                @click="selectCity(suggestion)"
+                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
               >
-                <div
-                  v-for="suggestion in suggestions"
-                  :key="suggestion.id"
-                  @click="selectCity(suggestion)"
-                  class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
-                >
-                  <div
-                    class="text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    {{ suggestion.name }}
-                  </div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ suggestion.admin1 ? suggestion.admin1 + ", " : ""
-                    }}{{ suggestion.country }}
-                  </div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ suggestion.name }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ suggestion.admin1 ? suggestion.admin1 + ", " : ""
+                  }}{{ suggestion.country }}
                 </div>
               </div>
             </div>
-            <button
-              @click="handleCitySearch"
-              :disabled="isLoading || !cityName.trim()"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Search
-            </button>
           </div>
         </div>
       </div>
@@ -268,7 +219,7 @@ onMounted(() => {
         </div>
 
         <div v-else class="text-center py-12 text-gray-500 dark:text-gray-400">
-          <p>Loading weather data...</p>
+          <p>Search for a city above to view weather data</p>
         </div>
       </div>
 
